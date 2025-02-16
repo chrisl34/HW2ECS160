@@ -3,29 +3,46 @@ import com.ecs160.persistence.Persistable;
 import com.ecs160.persistence.PersistableField;
 import com.ecs160.persistence.PersistableId;
 import com.ecs160.persistence.PersistableListField;
+import java.util.List;
 
 @Persistable
 public class Post {
 
     @PersistableId
-    private int postId;
+    private Integer postId;
 
     @PersistableField
     private String postContent;
 
-    @PersistableListField(className = "Post")
-    private Post[] replies;
+    @PersistableListField(className = "com.ecs160.Post")
+    private List<Post> replies;
+
+    public Post(){
+
+    }
 
     //Constructor Function
-    public Post(int postId, String postContent, Post[] replies) {
+    public Post(int postId, String postContent, List<Post> replies) {
         this.postId = postId;
         this.postContent = postContent;
         this.replies = replies;
     }
 
     //Get postId
-    public int getPostId() {
+    public Integer getPostId() {
         return this.postId;
+    }
+
+    public void setPostId(Integer postId) {
+        this.postId = postId;
+    }
+
+    public void setPostContent(String postContent) {
+        this.postContent = postContent;
+    }
+
+    public void setReplies(List<Post> replies) {
+        this.replies = replies;
     }
 
     //get content
@@ -34,13 +51,12 @@ public class Post {
     }
 
     //get replies
-    public Post[] getReplies() {
+    public List<Post> getReplies() {
         return this.replies;
     }
 
     public void print() {
         System.out.println("Post Id: " + this.postId);
-        System.out.println("Content: " + this.content);
-        //System.out.println("Replies: " + Arrays.toString(this.replies));
+        System.out.println("Content: " + this.postContent);
     }
 }
