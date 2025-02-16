@@ -16,11 +16,6 @@ import javassist.util.proxy.MethodHandler;
 import javassist.util.proxy.ProxyFactory;
 import redis.clients.jedis.Jedis;
 
-
-
-
-
-// Assumption - only support int/long/and string values
 public class Session {
     private List<Object> objects = new ArrayList<>();
     private Jedis jedisSession;
@@ -84,7 +79,6 @@ public class Session {
         try {
             Class<?> clazz = object.getClass();
             String key = null;
-            // Find the field annotated with @PersistableId
             for (Field f : clazz.getDeclaredFields()) {
                 if (f.isAnnotationPresent(PersistableId.class)) {
                     f.setAccessible(true);
@@ -92,69 +86,59 @@ public class Session {
                     break;
                 }
             }
-            // Retrieve data from Redis
             Map<String, String> map = jedisSession.hgetAll(key);
-            // Create a new instance of the class
-            Object obj = (Object) clazz.newInstance();
-            // Populate fields from Redis data
             for (Map.Entry<String, String> entry : map.entrySet()) {
                 String fieldName = entry.getKey();
                 String fieldValue = entry.getValue();
                 Field field = clazz.getDeclaredField(fieldName);
                 field.setAccessible(true);
                 if (field.isAnnotationPresent(PersistableListField.class)) {
-                    // Extract class type from annotation
                     PersistableListField annotation = field.getAnnotation(PersistableListField.class);
-                    Class<?> relatedClass = Class.forName(annotation.className());
-
-                    List<Object> relatedObjects = new ArrayList<>();
+                    Class<?> subClass = Class.forName(annotation.className());
+                    if(fieldValue.length() == 0) {
+                        field.set(object, new ArrayList<>());
+                        continue;
+                    }
+                    List<Object> responses = new ArrayList<>();
                     for (String id : fieldValue.split(",")) {
                         try {
-                            // Create a new instance of the related class
-                            Object instance = relatedClass.newInstance();
-                            // Find the @PersistableId field and set the ID
-                            for (Field f : relatedClass.getDeclaredFields()) {
+                            Object instance = subClass.newInstance();
+                            for (Field f : subClass.getDeclaredFields()) {
                                 if (f.isAnnotationPresent(PersistableId.class)) {
                                     f.setAccessible(true);
-
                                     if (f.getType().equals(Integer.class) || f.getType().equals(int.class)) {
-                                        // If the field type is Integer or int, convert the id (String) to Integer
                                         f.set(instance, Integer.parseInt(id));
                                     } else if (f.getType().equals(String.class)) {
-                                        // If the field type is String, set the id directly
                                         f.set(instance, id);
                                     }
-                                    break; // Found the field, no need to continue looping
+                                    break;
                                 }
                             }
-
-                            // Recursively load the full object
                             Object fullObject = load(instance);
-                            relatedObjects.add(fullObject);
+                            responses.add(fullObject);
 
                         } catch (InstantiationException | IllegalAccessException e) {
                             e.printStackTrace();
                         }
                     }
-                    field.set(obj, relatedObjects);
+                    field.set(object, responses);
                 } else {
                     Object convertedValue;
-                    if (field.getType().equals(int.class) || field.getType().equals(Integer.class)) {
-                        // Check if fieldValue is empty, if so, assign a default value (e.g., 0)
+                    if (field.getType().equals(Integer.class)) {
                         if (fieldValue.isEmpty()) {
-                            convertedValue = 0; // or any other default value you prefer
+                            convertedValue = 0;
                         } else {
                             convertedValue = Integer.parseInt(fieldValue);
                         }
                     } else {
-                        convertedValue = fieldValue; // Keep as String
+                        convertedValue = fieldValue;
                     }
 
-                    field.set(obj, convertedValue);
+                    field.set(object, convertedValue);
 
                 }
             }
-            return obj;
+            return object;
 
         } catch (Exception e) {
             e.printStackTrace();

@@ -11,6 +11,7 @@ import java.io.*;
 import java.net.URISyntaxException;
 import java.util.List;
 import com.ecs160.persistence.*;
+import java.util.Scanner;
 
 public class MyApp {
     public static void main(String[] args) throws FileNotFoundException, URISyntaxException, NoSuchFieldException {
@@ -36,10 +37,13 @@ public class MyApp {
             session.add(post);
         }
         session.persistAll();
-        Post t1 = new Post();
-        t1.setPostId(1);
-        Post test = (Post)session.load(t1);
-        test.print();
-
+        Scanner s = new Scanner(System.in);
+        System.out.print("Enter Post Id: ");
+        int id = s.nextInt();
+        Integer postId = id;
+        Post post = new Post();
+        post.setPostId(postId);
+        Post res = (Post)session.load(post);
+        res.printToUser();
     }
 }

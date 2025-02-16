@@ -55,8 +55,19 @@ public class Post {
         return this.replies;
     }
 
-    public void print() {
+    public void printTest() {
         System.out.println("Post Id: " + this.postId);
         System.out.println("Content: " + this.postContent);
+        for(Post reply : this.replies) {
+            System.out.println("Reply");
+            reply.printTest();
+        }
+    }
+
+    public void printToUser(){
+        System.out.println(this.postContent);
+        for(Post reply : this.replies) {
+            System.out.println("-->" + reply.getPostContent());
+        }
     }
 }
